@@ -28,12 +28,12 @@ in this repo, and not beside the jar. See `config.example.properties`.
 
 Project docs live one level up, outside this repo, in the Cowork folder:
 
-| File | What it is |
-|---|---|
-| `../build-plan.md` | Phase-by-phase build order. **The document to follow.** |
-| `../brief.md` | Settled brief: stack, scope, constraints, decisions log. |
-| `../architecture.md` | Runtime shape, data model, build wiring, known traps. |
-| `../CLAUDE.md` | Working rules for this project. |
+| File                 | What it is                                               |
+|----------------------|----------------------------------------------------------|
+| `../build-plan.md`   | Phase-by-phase build order. **The document to follow.**  |
+| `../brief.md`        | Settled brief: stack, scope, constraints, decisions log. |
+| `../architecture.md` | Runtime shape, data model, build wiring, known traps.    |
+| `../CLAUDE.md`       | Working rules for this project.                          |
 
 `RUNBOOK.md` lands in Phase 6 - one page, printed, in the box with the cables.
 
