@@ -1,11 +1,7 @@
-# Normalise line endings. This repo gets touched from Windows and from a Linux
-# CI runner, and without this a cross-platform commit shows every file as
-# changed. Text normalised to LF in the repo, checked out native on Windows.
+# normalise line endings: LF in repo, native on checkout
 * text=auto
 
-# The Maven Wrapper MUST be LF. The GitHub Actions runner is Linux and will
-# refuse to execute it with CRLF endings - the error says "no such file or
-# directory" and means nothing of the sort.
+# mvnw must be LF or the Linux CI runner won't execute it
 /mvnw    text eol=lf
 *.sh     text eol=lf
 *.cmd    text eol=crlf
