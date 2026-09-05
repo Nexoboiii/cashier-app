@@ -21,7 +21,7 @@ not need Maven installed.
 java -jar target/cashier-app.jar
 ```
 
-The live database, backups and logs live under `Desktop\comic-con_stuff\` - not
+The live database, backups and logs live under `Desktop\comic-con_stuff\till\` - not
 in this repo, and not beside the jar. See `config.example.properties`.
 
 ## Documentation

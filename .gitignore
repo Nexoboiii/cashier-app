@@ -1,49 +1,50 @@
+# leading slash = repo root only. without it a pattern matches at EVERY level,
+# which is how config/ once swallowed the java config package.
+
 # --- build output ---
-target/
+/target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 node_modules/
-dist/
-frontend/node/
+/frontend/dist/
 
-# vite build output - generated, never hand-edited
-src/main/resources/static/
+# --- vite build output: generated, never hand-edited ---
+/src/main/resources/static/
 
 # --- maven wrapper: jar is downloaded, not committed ---
-.mvn/wrapper/maven-wrapper.jar
+/.mvn/wrapper/maven-wrapper.jar
 
-# --- runtime data: lives in Desktop\comic-con_stuff\ ---
-data/
-backups/
+# --- node installed by frontend-maven-plugin ---
+/frontend/node/
+
+# --- runtime data: lives in Desktop\comic-con_stuff\till\ ---
+/data/
+/backups/
 *.mv.db
 *.trace.db
 
 # --- logs ---
-logs/
+/logs/
 *.log
 
 # --- machine config: commit config.example.properties instead ---
-config/
+/config/
 .env
 
 # --- cypress artefacts (Phase 3c) ---
-frontend/cypress/screenshots/
-frontend/cypress/videos/
-frontend/cypress/downloads/
+/frontend/cypress/screenshots/
+/frontend/cypress/videos/
+/frontend/cypress/downloads/
 
 # --- spring initializr leftovers ---
-HELP.md
+/HELP.md
 
-# --- IDE: IntelliJ ---
+# --- IDE ---
 .idea
 *.iml
 *.iws
 *.ipr
-
-# --- IDE: VS Code ---
 .vscode/
-
-# --- IDE: Eclipse / STS ---
 .apt_generated
 .classpath
 .factorypath
@@ -51,9 +52,3 @@ HELP.md
 .settings
 .springBeans
 .sts4-cache
-
-# --- IDE: NetBeans ---
-/nbproject/private/
-/nbbuild/
-/nbdist/
-/.nb-gradle/
