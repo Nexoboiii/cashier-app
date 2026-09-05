@@ -3,7 +3,7 @@ target/
 node_modules/
 dist/
 
-# --- runtime data: lives in Documents\cashier-app\, never in the repo ---
+# --- runtime data: lives in Desktop\comic-con_stuff\, never in the repo ---
 data/
 backups/
 *.mv.db
@@ -16,6 +16,11 @@ logs/
 # --- machine-specific config: commit config.example.properties instead ---
 config/
 .env
+
+# --- cypress artefacts (Phase 3c) ---
+frontend/cypress/screenshots/
+frontend/cypress/videos/
+frontend/cypress/downloads/
 
 # --- IDE ---
 .idea/
