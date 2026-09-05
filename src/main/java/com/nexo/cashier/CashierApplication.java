@@ -9,5 +9,5 @@ public class CashierApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(CashierApplication.class, args);
 	}
-
+	int broken = "this is not an int";
 }
