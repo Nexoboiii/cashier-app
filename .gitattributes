@@ -1,7 +1,11 @@
-# Normalise line endings. This repo gets touched from Windows and from a Linux
-# shell, and without this the first cross-platform commit shows every file as
-# changed. Text normalised to LF in the repo, checked out native on Windows.
+# normalise line endings: LF in repo, native on checkout
 * text=auto
+
+# mvnw must be LF or the Linux CI runner won't execute it
+/mvnw    text eol=lf
+*.sh     text eol=lf
+*.cmd    text eol=crlf
+*.bat    text eol=crlf
 
 *.java   text
 *.js     text
@@ -11,8 +15,6 @@
 *.md     text
 *.yml    text
 *.properties text
-*.bat    text eol=crlf
-*.sh     text eol=lf
 
 *.png    binary
 *.ico    binary
