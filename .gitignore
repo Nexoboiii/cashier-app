@@ -1,0 +1,23 @@
+# --- build output ---
+target/
+node_modules/
+dist/
+
+# --- runtime data: lives in Documents\cashier-app\, never in the repo ---
+data/
+backups/
+*.mv.db
+*.trace.db
+
+# --- logs ---
+logs/
+*.log
+
+# --- machine-specific config: commit config.example.properties instead ---
+config/
+.env
+
+# --- IDE ---
+.idea/
+*.iml
+.vscode/

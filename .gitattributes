@@ -1,0 +1,20 @@
+# Normalise line endings. This repo gets touched from Windows and from a Linux
+# shell, and without this the first cross-platform commit shows every file as
+# changed. Text normalised to LF in the repo, checked out native on Windows.
+* text=auto
+
+*.java   text
+*.js     text
+*.jsx    text
+*.json   text
+*.xml    text
+*.md     text
+*.yml    text
+*.properties text
+*.bat    text eol=crlf
+*.sh     text eol=lf
+
+*.png    binary
+*.ico    binary
+*.jar    binary
+*.zip    binary
