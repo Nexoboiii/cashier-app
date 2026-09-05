@@ -48,5 +48,5 @@ Every amount is stored as an integer in minor units. **No `double`, no
 `float`, anywhere near a price.** Divide for display only; all arithmetic
 happens on integers.
 
-The exact unit - whole rupees or cents - is decided in Phase 2, before the
-products table exists.
+The unit is **whole rupees**: 1500 means Rs 1,500. No divide-by-100 anywhere.
+The CSV price column holds that same integer.
