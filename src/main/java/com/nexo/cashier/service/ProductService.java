@@ -6,6 +6,15 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
+import com.opencsv.CSVWriter;
+import java.io.StringWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 @Service
 public class ProductService {
@@ -38,6 +47,99 @@ public class ProductService {
 		existing.setPriceMinorUnits(priceMinorUnits);
 		existing.setLowStockThreshold(lowStockThreshold);
 		return repository.save(existing);
+	}
+
+	public ImportResult importCsv(InputStream in) {
+		int created = 0;
+		int updated = 0;
+		List<ImportResult.RowError> errors = new ArrayList<>();
+
+		try (CSVReader reader = new CSVReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+
+			String[] header = reader.readNext();
+			if (header == null) throw new IllegalArgumentException("the file is empty");
+			if (header.length > 0) header[0] = header[0].replace("\uFEFF", "").trim();
+			checkHeader(header);
+
+			String[] row;
+			int line = 1;
+			while ((row = reader.readNext()) != null) {
+				line++;
+				if (row.length == 1 && row[0].isBlank()) continue;
+				try {
+					if (upsertRow(row)) created++; else updated++;
+				} catch (Exception e) {
+					errors.add(new ImportResult.RowError(line, e.getMessage()));
+				}
+			}
+		} catch (IOException | CsvValidationException e) {
+			throw new IllegalArgumentException("could not read the file: " + e.getMessage());
+		}
+
+		return new ImportResult(created, updated, errors.size(), errors);
+	}
+	public String exportCsv() {
+		StringWriter out = new StringWriter();
+		try (CSVWriter writer = new CSVWriter(out)) {
+			writer.writeNext(new String[] { "name", "price", "stock", "lowStockThreshold" }, false);
+			for (Product p : repository.findAll()) {
+				writer.writeNext(new String[] {
+						p.getName(),
+						String.valueOf(p.getPriceMinorUnits()),
+						String.valueOf(p.getStockQuantity()),
+						String.valueOf(p.getLowStockThreshold())
+				}, false);
+			}
+		} catch (IOException e) {
+			throw new IllegalStateException("could not write the csv", e);
+		}
+		// BOM so excel opens it as utf-8
+		return "\uFEFF" + out.toString();
+	}
+
+	private void checkHeader(String[] header) {
+		String[] expected = { "name", "price", "stock", "lowStockThreshold" };
+		if (header.length < expected.length) {
+			throw new IllegalArgumentException("expected columns: name,price,stock,lowStockThreshold");
+		}
+		for (int i = 0; i < expected.length; i++) {
+			if (!header[i].trim().equalsIgnoreCase(expected[i])) {
+				throw new IllegalArgumentException(
+						"column " + (i + 1) + " should be '" + expected[i] + "' but was '" + header[i].trim() + "'");
+			}
+		}
+	}
+
+	// true = created, false = updated
+	private boolean upsertRow(String[] row) {
+		if (row.length < 4) throw new IllegalArgumentException("expected 4 columns, found " + row.length);
+
+		String name = row[0].trim();
+		int price = parseWholeNumber(row[1], "price");
+		int stock = parseWholeNumber(row[2], "stock");
+		int threshold = parseWholeNumber(row[3], "lowStockThreshold");
+
+		validate(name, price, stock, threshold);
+
+		Optional<Product> existing = repository.findByName(name);
+		if (existing.isPresent()) {
+			Product p = existing.get();
+			p.setPriceMinorUnits(price);
+			p.setLowStockThreshold(threshold);
+			// stock deliberately not touched - see note
+			repository.save(p);
+			return false;
+		}
+		repository.save(new Product(name, price, stock, threshold));
+		return true;
+	}
+
+	private int parseWholeNumber(String raw, String field) {
+		try {
+			return Integer.parseInt(raw.trim());
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException(field + " must be a whole number, was '" + raw.trim() + "'");
+		}
 	}
 	private void validate(String name, int priceMinorUnits, int stockQuantity, int lowStockThreshold) {
 		if (name == null || name.isBlank()) throw new IllegalArgumentException("name is required");
