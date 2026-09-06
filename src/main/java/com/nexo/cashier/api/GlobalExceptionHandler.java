@@ -16,6 +16,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 	public record ApiError(String error, String reqId) {}
 
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<GlobalExceptionHandler.ApiError> badRequest(IllegalArgumentException e) {
+		String reqId = MDC.get("reqId");
+		log.warn("bad request: {}", e.getMessage());
+		return ResponseEntity.badRequest().body(new GlobalExceptionHandler.ApiError(e.getMessage(), reqId));
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ApiError> handle(Exception e) {
 		String reqId = MDC.get("reqId");
