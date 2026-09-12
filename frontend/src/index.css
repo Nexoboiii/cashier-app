@@ -6,6 +6,7 @@ body {
   font: 15px/1.4 system-ui, sans-serif;
   background: #111;
   color: #eee;
+  color-scheme: dark;
 }
 
 .page { max-width: 900px; margin: 0 auto; }
@@ -14,7 +15,7 @@ body {
 .error { color: #ff6b6b; }
 
 /* --- controls --- */
-input, button, .button {
+input, button, select, .button {
   padding: 8px 12px;
   font: inherit;
   border: 1px solid #444;
@@ -81,3 +82,12 @@ tr.low td { color: #ffb454; }
 .done { text-align: center; padding-top: 60px; }
 .done .label { font-size: 20px; color: #888; margin-bottom: 0; }
 .change-huge { font-size: 92px; font-weight: 700; color: #7ddc8a; margin: 8px 0 4px; line-height: 1; }
+
+.stock-warn {
+  grid-column: 1 / -1;
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  background: #241d10; border: 1px solid #4a3a18; border-radius: 6px;
+  padding: 8px 12px; margin-bottom: 4px;
+}
+.stock-warn .out { color: #ff8080; font-weight: 600; }
+.stock-warn .low { color: #ffb454; font-weight: 600; }

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 const EMPTY = { name: '', priceMinorUnits: '', stockQuantity: '', lowStockThreshold: '' }
 
 // whole rupees - no division, ever
+const EMPTY_STOCK = { action: 'restock', amount: '', note: '' }
 const money = (r) => 'Rs ' + r.toLocaleString('en-LK')
 
 export default function Products() {
@@ -11,6 +12,8 @@ export default function Products() {
   const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState(null)
   const [importResult, setImportResult] = useState(null)
+  const [stockFor, setStockFor] = useState(null)
+  const [stockForm, setStockForm] = useState(EMPTY_STOCK)
 
   useEffect(() => { load() }, [])
 
@@ -87,6 +90,33 @@ export default function Products() {
     setImportResult(await res.json())
     load()
   }
+  function openStock(p) {
+    setStockFor(p)
+    setStockForm(EMPTY_STOCK)
+    setError(null)
+  }
+
+  async function submitStock(e) {
+    e.preventDefault()
+    setError(null)
+
+    const amount = Number(stockForm.amount)
+    const body = stockForm.action === 'correct'
+      ? { countedStock: amount, note: stockForm.note }
+      : { quantity: amount, note: stockForm.note }
+
+    const res = await fetch(`/api/products/${stockFor.id}/${stockForm.action}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    if (!res.ok) return setError(await failureMessage(res))
+
+    setStockFor(null)
+    setStockForm(EMPTY_STOCK)
+    load()
+  }
 
   const field = (k) => ({
     value: form[k],
@@ -137,7 +167,35 @@ export default function Products() {
           )}
         </div>
       )}
-
+      {stockFor && (
+        <form onSubmit={submitStock} className="summary">
+          <strong>{stockFor.name}</strong> — currently {stockFor.stockQuantity} in stock
+          <div className="row">
+            <select
+              value={stockForm.action}
+              onChange={(e) => setStockForm({ ...stockForm, action: e.target.value })}
+            >
+              <option value="restock">Restock (add)</option>
+              <option value="damage">Damaged (remove)</option>
+              <option value="correct">Correct to (counted)</option>
+            </select>
+            <input
+              type="number"
+              placeholder={stockForm.action === 'correct' ? 'counted stock' : 'quantity'}
+              value={stockForm.amount}
+              onChange={(e) => setStockForm({ ...stockForm, amount: e.target.value })}
+              required
+            />
+            <input
+              placeholder="note (optional)"
+              value={stockForm.note}
+              onChange={(e) => setStockForm({ ...stockForm, note: e.target.value })}
+            />
+            <button type="submit">Apply</button>
+            <button type="button" onClick={() => setStockFor(null)}>Cancel</button>
+          </div>
+        </form>
+      )}
       <table>
         <thead>
           <tr>
@@ -151,7 +209,10 @@ export default function Products() {
               <td>{money(p.priceMinorUnits)}</td>
               <td>{p.stockQuantity}</td>
               <td>{p.lowStockThreshold}</td>
-              <td><button onClick={() => edit(p)}>Edit</button></td>
+              <td>
+                <button onClick={() => edit(p)}>Edit</button>
+                <button onClick={() => openStock(p)}>Stock</button>
+              </td>
             </tr>
           ))}
         </tbody>

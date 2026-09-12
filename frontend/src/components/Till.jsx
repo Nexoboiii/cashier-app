@@ -20,6 +20,8 @@ export default function Till() {
 
   const total = cart.reduce((s, l) => s + l.unitPrice * l.quantity, 0)
   const inCart = (id) => cart.find((l) => l.productId === id)?.quantity ?? 0
+  const lowStock = products.filter((p) => p.stockQuantity <= p.lowStockThreshold && p.stockQuantity > 0)
+  const soldOut = products.filter((p) => p.stockQuantity === 0)
 
   const tenderedNum = Number(tendered)
   const changeDue = tendered !== '' && tenderedNum >= total ? tenderedNum - total : null
@@ -108,6 +110,15 @@ export default function Till() {
 
   return (
     <div className="till">
+      {(lowStock.length > 0 || soldOut.length > 0) && (
+        <div className="stock-warn">
+          {soldOut.length > 0 && <span className="out">{soldOut.length} sold out</span>}
+          {lowStock.length > 0 && <span className="low">{lowStock.length} low</span>}
+          <span className="muted">
+            {[...soldOut, ...lowStock].map((p) => p.name).join(' · ')}
+          </span>
+        </div>
+      )}
       <div className="grid">
         {products.map((p) => {
           const left = p.stockQuantity - inCart(p.id)
