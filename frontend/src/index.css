@@ -91,3 +91,30 @@ tr.low td { color: #ffb454; }
 }
 .stock-warn .out { color: #ff8080; font-weight: 600; }
 .stock-warn .low { color: #ffb454; font-weight: 600; }
+
+/* --- day report --- */
+.tiles { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+.stat {
+  flex: 1; min-width: 120px; padding: 12px;
+  background: #181818; border: 1px solid #333; border-radius: 6px;
+}
+.stat span { display: block; color: #888; font-size: 13px; }
+.stat strong { font-size: 24px; }
+
+.recon { max-width: 420px; }
+.recon td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.recon .expected td { font-weight: 700; border-top: 2px solid #444; }
+.recon .ok td { color: #7ddc8a; font-weight: 700; }
+.recon .off td { color: #ff8080; font-weight: 700; }
+
+/* --- print --- */
+@media print {
+  body { background: #fff; color: #000; color-scheme: light; padding: 0; }
+  .nav, .no-print { display: none; }
+  .stat { background: #fff; border-color: #ccc; }
+  .stat span { color: #444; }
+  .muted { color: #555; }
+  th, td { border-color: #ccc; }
+  h2, h3 { break-after: avoid; }
+  tr { break-inside: avoid; }
+}

@@ -22,4 +22,6 @@ public interface AuditRepository extends JpaRepository<AuditEvent, Long> {
 							@Param("to") Instant to,
 							@Param("type") AuditEventType type,
 							Pageable page);
+	List<AuditEvent> findByTimestampBetweenAndTypeNotOrderByTimestampAsc(
+			Instant from, Instant to, AuditEventType exclude);
 }
