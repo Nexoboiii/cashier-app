@@ -9,9 +9,11 @@ body {
 }
 
 .page { max-width: 900px; margin: 0 auto; }
-
 .row { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; align-items: center; }
+.muted { color: #777; }
+.error { color: #ff6b6b; }
 
+/* --- controls --- */
 input, button, .button {
   padding: 8px 12px;
   font: inherit;
@@ -23,11 +25,59 @@ input, button, .button {
 
 button, .button { cursor: pointer; text-decoration: none; }
 button:hover, .button:hover { background: #2a2a2a; }
+button:disabled { opacity: 0.35; cursor: not-allowed; }
 input:disabled { opacity: 0.4; cursor: not-allowed; }
 
+.big { flex: 1; padding: 16px; font-size: 18px; }
+
+/* --- nav --- */
+.nav { display: flex; gap: 8px; margin-bottom: 16px; }
+.nav .on { background: #2f5d3a; border-color: #3f7d4a; }
+
+/* --- products page --- */
 table { width: 100%; border-collapse: collapse; margin-top: 16px; }
 th, td { text-align: left; padding: 8px; border-bottom: 1px solid #333; }
 tr.low td { color: #ffb454; }
-
-.error { color: #ff6b6b; }
 .summary { background: #1c1c1c; padding: 12px; border-radius: 4px; }
+
+/* --- till layout --- */
+.till { display: grid; grid-template-columns: 1fr 360px; gap: 16px; align-items: start; }
+
+/* --- product tiles --- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+
+.tile {
+  display: flex; flex-direction: column; gap: 6px;
+  min-height: 118px; padding: 14px; text-align: left;
+}
+.tile:disabled { opacity: 0.3; }
+.tile-name { font-weight: 600; font-size: 17px; line-height: 1.2; }
+.tile-price { color: #9ad; font-size: 21px; font-weight: 600; }
+.tile-stock { font-size: 13px; color: #888; margin-top: auto; }
+
+/* --- cart --- */
+.cart { background: #181818; border: 1px solid #333; border-radius: 6px; padding: 12px; }
+.cart-line { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid #2a2a2a; }
+.cart-line button { padding: 8px 12px; font-size: 16px; }
+.cart-name { flex: 1; }
+.cart-total { min-width: 80px; text-align: right; }
+.qty { min-width: 24px; text-align: center; }
+
+.total-big { font-size: 40px; font-weight: 700; margin: 14px 0; }
+
+/* --- payment --- */
+.tender { width: 100%; font-size: 18px; }
+.quick { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.quick button { flex: 1; min-width: 70px; padding: 10px 6px; }
+.change-preview { color: #7ddc8a; font-size: 20px; }
+.pay { display: flex; gap: 8px; margin: 12px 0; }
+
+/* --- sale complete --- */
+.done { text-align: center; padding-top: 60px; }
+.done .label { font-size: 20px; color: #888; margin-bottom: 0; }
+.change-huge { font-size: 92px; font-weight: 700; color: #7ddc8a; margin: 8px 0 4px; line-height: 1; }
