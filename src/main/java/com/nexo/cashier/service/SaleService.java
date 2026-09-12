@@ -18,11 +18,14 @@ public class SaleService {
 	private final SaleRepository saleRepository;
 	private final ProductRepository productRepository;
 	private final AuditService audit;
+	private final TillDayRepository tillDayRepository;
 
-	public SaleService(SaleRepository saleRepository, ProductRepository productRepository, AuditService audit) {
+	public SaleService(SaleRepository saleRepository, ProductRepository productRepository,
+					   AuditService audit, TillDayRepository tillDayRepository) {
 		this.saleRepository = saleRepository;
 		this.productRepository = productRepository;
 		this.audit = audit;
+		this.tillDayRepository = tillDayRepository;
 	}
 
 	@Transactional
@@ -38,6 +41,11 @@ public class SaleService {
 	private Sale doCreateSale(List<SaleLine> lines, PaymentMethod paymentMethod, Integer cashTenderedMinorUnits) {
 		if (lines == null || lines.isEmpty()) throw new IllegalArgumentException("a sale needs at least one line");
 		if (paymentMethod == null) throw new IllegalArgumentException("payment method is required");
+
+		// no open day means the sale would appear in no report
+		if (tillDayRepository.findFirstByClosedAtIsNullOrderByOpenedAtDesc().isEmpty()) {
+			throw new IllegalArgumentException("no day is open - open the till first");
+		}
 
 		Sale sale = new Sale(Instant.now(), paymentMethod);
 		int total = 0;

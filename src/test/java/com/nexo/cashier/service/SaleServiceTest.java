@@ -2,10 +2,12 @@ package com.nexo.cashier.service;
 
 import com.nexo.cashier.model.PaymentMethod;
 import com.nexo.cashier.persistence.*;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,6 +19,26 @@ class SaleServiceTest {
 	@Autowired SaleRepository saleRepository;
 	@Autowired ProductRepository productRepository;
 	@Autowired AuditRepository auditRepository;
+	@Autowired TillDayRepository tillDayRepository;
+
+	@BeforeEach
+	void openTheTill() {
+		if (tillDayRepository.findFirstByClosedAtIsNullOrderByOpenedAtDesc().isEmpty()) {
+			tillDayRepository.save(new TillDay(Instant.now(), 0));
+		}
+	}
+	@Test
+	void noSaleWithoutAnOpenDay() {
+		tillDayRepository.deleteAll();
+		Product keyring = productRepository.save(new Product("RB Keyring", 400, 10, 2));
+
+		assertThrows(IllegalArgumentException.class, () -> saleService.createSale(
+				List.of(new SaleLine(keyring.getId(), 1)),
+				PaymentMethod.CASH, 1000));
+
+		assertEquals(10, productRepository.findById(keyring.getId()).orElseThrow().getStockQuantity(),
+				"a refused sale touched stock");
+	}
 
 	@Test
 	void aFailedSaleLeavesNothingBehind() {
