@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.nexo.cashier.model.AuditEventType;
 import java.time.Instant;
 import java.util.List;
 
@@ -17,15 +17,25 @@ public class SaleService {
 
 	private final SaleRepository saleRepository;
 	private final ProductRepository productRepository;
+	private final AuditService audit;
 
-	public SaleService(SaleRepository saleRepository, ProductRepository productRepository) {
+	public SaleService(SaleRepository saleRepository, ProductRepository productRepository, AuditService audit) {
 		this.saleRepository = saleRepository;
 		this.productRepository = productRepository;
+		this.audit = audit;
 	}
 
 	@Transactional
 	public Sale createSale(List<SaleLine> lines, PaymentMethod paymentMethod, Integer cashTenderedMinorUnits) {
+		try {
+			return doCreateSale(lines, paymentMethod, cashTenderedMinorUnits);
+		} catch (RuntimeException e) {
+			audit.recordFailure(AuditEventType.SALE_FAILED, "SALE", null, null, e.getMessage());
+			throw e;
+		}
+	}
 
+	private Sale doCreateSale(List<SaleLine> lines, PaymentMethod paymentMethod, Integer cashTenderedMinorUnits) {
 		if (lines == null || lines.isEmpty()) throw new IllegalArgumentException("a sale needs at least one line");
 		if (paymentMethod == null) throw new IllegalArgumentException("payment method is required");
 
@@ -71,6 +81,9 @@ public class SaleService {
 		Sale saved = saleRepository.save(sale);
 		log.info("sale {} completed: {} lines, total {}, {}",
 				saved.getId(), saved.getLines().size(), saved.getTotalMinorUnits(), paymentMethod);
+		audit.record(AuditEventType.SALE_COMPLETED, "SALE", saved.getId(),
+				(long) saved.getTotalMinorUnits(),
+				saved.getLines().size() + " lines, " + paymentMethod);
 		return saved;
 	}
 }

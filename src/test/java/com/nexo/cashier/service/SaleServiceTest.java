@@ -16,6 +16,7 @@ class SaleServiceTest {
 	@Autowired SaleService saleService;
 	@Autowired SaleRepository saleRepository;
 	@Autowired ProductRepository productRepository;
+	@Autowired AuditRepository auditRepository;
 
 	@Test
 	void aFailedSaleLeavesNothingBehind() {
@@ -51,5 +52,21 @@ class SaleServiceTest {
 		assertEquals("RB Badge", line.getProductNameAtSale());
 		assertEquals(350, line.getUnitPriceAtSale());
 		assertEquals(1050, line.getLineTotal());
+	}
+
+	@Test
+	void aFailedSaleStillWritesAnAuditRow() {
+		Product scarce = productRepository.save(new Product("RB Pin", 500, 1, 1));
+
+		long salesBefore = saleRepository.count();
+		long auditBefore = auditRepository.count();
+
+		assertThrows(IllegalArgumentException.class, () -> saleService.createSale(
+				List.of(new SaleLine(scarce.getId(), 5)),
+				PaymentMethod.CASH, 10000));
+
+		assertEquals(salesBefore, saleRepository.count(), "a failed sale wrote a sale row");
+		assertEquals(auditBefore + 1, auditRepository.count(),
+				"SALE_FAILED did not survive the rollback - check REQUIRES_NEW and that AuditService is a separate bean");
 	}
 }

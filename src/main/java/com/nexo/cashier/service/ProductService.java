@@ -3,7 +3,7 @@ package com.nexo.cashier.service;
 import com.nexo.cashier.persistence.Product;
 import com.nexo.cashier.persistence.ProductRepository;
 import org.springframework.stereotype.Service;
-
+import com.nexo.cashier.model.AuditEventType;
 import java.util.List;
 import java.util.Optional;
 import com.opencsv.CSVReader;
@@ -20,9 +20,11 @@ import java.util.ArrayList;
 public class ProductService {
 
 	private final ProductRepository repository;
+	private final AuditService audit;
 
-	public ProductService(ProductRepository repository) {
+	public ProductService(ProductRepository repository, AuditService audit) {
 		this.repository = repository;
+		this.audit = audit;
 	}
 
 	public List<Product> findAll() {
@@ -75,7 +77,8 @@ public class ProductService {
 		} catch (IOException | CsvValidationException e) {
 			throw new IllegalArgumentException("could not read the file: " + e.getMessage());
 		}
-
+		audit.record(AuditEventType.PRODUCTS_IMPORTED, "PRODUCT", null, null,
+				created + " created, " + updated + " updated, " + errors.size() + " skipped");
 		return new ImportResult(created, updated, errors.size(), errors);
 	}
 	public String exportCsv() {
