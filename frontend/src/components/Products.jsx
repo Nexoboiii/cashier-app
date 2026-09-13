@@ -150,8 +150,8 @@ export default function Products() {
                  <option key={s} value={s} />
              ))}
          </datalist>
-        <button type="submit">{editingId === null ? 'Add' : 'Save'}</button>
-        {editingId !== null && <button type="button" onClick={cancel}>Cancel</button>}
+        <button type="submit" className="btn-primary">{editingId === null ? 'Add' : 'Save'}</button>
+        {editingId !== null && <button type="button" className="btn-ghost" onClick={cancel}>Cancel</button>}
       </form>
 
       <div className="row">
@@ -220,8 +220,8 @@ export default function Products() {
               <td>{p.stockQuantity}</td>
               <td>{p.lowStockThreshold}</td>
               <td>
-                <button onClick={() => edit(p)}>Edit</button>
-                <button onClick={() => openStock(p)}>Stock</button>
+                <button className="btn-ghost" onClick={() => edit(p)}>Edit</button>
+                <button className="btn-ghost" onClick={() => openStock(p)}>Stock</button>
               </td>
             </tr>
           ))}

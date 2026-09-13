@@ -12,11 +12,12 @@ import java.util.*;
 @Service
 public class ReportService {
 
+	private static final String OWN_STOCK = "Own stock";
+
 	private final TillDayRepository days;
 	private final SaleRepository sales;
 	private final AuditRepository audits;
 	private final AuditService audit;
-	private static final String OWN_STOCK = "Own stock";
 
 	public ReportService(TillDayRepository days, SaleRepository sales,
 						 AuditRepository audits, AuditService audit) {
@@ -84,14 +85,25 @@ public class ReportService {
 		return build(day, Instant.now());
 	}
 
+	// units and revenue always move together - one object so they cannot drift
+	private static final class Tally {
+		int units;
+		int revenue;
+
+		void add(int quantity, int amount) {
+			units += quantity;
+			revenue += amount;
+		}
+	}
+
 	private DayReport build(TillDay day, Instant upTo) {
 		List<Sale> daySales = sales.findByTimestampBetweenOrderByTimestampAsc(day.getOpenedAt(), upTo);
 
 		int total = 0, cash = 0, card = 0, tendered = 0, change = 0;
-		Map<String, Integer> units = new HashMap<>();
-		Map<String, Integer> revenue = new HashMap<>();
-		Map<String, Integer> supplierUnits = new HashMap<>();
-		Map<String, Integer> supplierRevenue = new HashMap<>();
+
+		Map<String, Tally> byItem = new HashMap<>();
+		Map<String, Tally> bySupplier = new HashMap<>();
+		Map<String, Map<String, Tally>> bySupplierItem = new HashMap<>();
 
 		for (Sale s : daySales) {
 			total += s.getTotalMinorUnits();
@@ -102,22 +114,26 @@ public class ReportService {
 			} else {
 				card += s.getTotalMinorUnits();
 			}
+
 			for (SaleLineItem l : s.getLines()) {
-				units.merge(l.getProductNameAtSale(), l.getQuantity(), Integer::sum);
-				revenue.merge(l.getProductNameAtSale(), l.getLineTotal(), Integer::sum);
+				String name = l.getProductNameAtSale();
 				String who = l.getSupplierAtSale() == null ? OWN_STOCK : l.getSupplierAtSale();
-				supplierUnits.merge(who, l.getQuantity(), Integer::sum);
-				supplierRevenue.merge(who, l.getLineTotal(), Integer::sum);
+
+				byItem.computeIfAbsent(name, k -> new Tally()).add(l.getQuantity(), l.getLineTotal());
+				bySupplier.computeIfAbsent(who, k -> new Tally()).add(l.getQuantity(), l.getLineTotal());
+				bySupplierItem
+						.computeIfAbsent(who, k -> new HashMap<>())
+						.computeIfAbsent(name, k -> new Tally())
+						.add(l.getQuantity(), l.getLineTotal());
 			}
 		}
 
-		List<DayReport.ItemLine> items = revenue.entrySet().stream()
-				.map(e -> new DayReport.ItemLine(e.getKey(), units.get(e.getKey()), e.getValue()))
-				.sorted(Comparator.comparingInt(DayReport.ItemLine::revenueMinorUnits).reversed()
-						.thenComparing(DayReport.ItemLine::name))
-				.toList();
-		List<DayReport.SupplierLine> suppliers = supplierRevenue.entrySet().stream()
-				.map(e -> new DayReport.SupplierLine(e.getKey(), supplierUnits.get(e.getKey()), e.getValue()))
+		List<DayReport.ItemLine> items = itemLines(byItem);
+
+		List<DayReport.SupplierLine> suppliers = bySupplier.entrySet().stream()
+				.map(e -> new DayReport.SupplierLine(
+						e.getKey(), e.getValue().units, e.getValue().revenue,
+						itemLines(bySupplierItem.getOrDefault(e.getKey(), Map.of()))))
 				.sorted(Comparator.comparingInt(DayReport.SupplierLine::revenueMinorUnits).reversed()
 						.thenComparing(DayReport.SupplierLine::supplier))
 				.toList();
@@ -143,7 +159,16 @@ public class ReportService {
 				day.getId(), day.getOpenedAt(), day.getClosedAt(), day.getOpeningFloatMinorUnits(),
 				daySales.size(), total, cash, card, average,
 				tendered, change, expected,
-				day.getCountedCashMinorUnits(), day.getVarianceMinorUnits(),day.getCloseNote(),
+				day.getCountedCashMinorUnits(), day.getVarianceMinorUnits(), day.getCloseNote(),
 				items, exceptions, suppliers);
+	}
+
+	// biggest earner first, name as the tiebreak so the order is stable
+	private static List<DayReport.ItemLine> itemLines(Map<String, Tally> tallies) {
+		return tallies.entrySet().stream()
+				.map(e -> new DayReport.ItemLine(e.getKey(), e.getValue().units, e.getValue().revenue))
+				.sorted(Comparator.comparingInt(DayReport.ItemLine::revenueMinorUnits).reversed()
+						.thenComparing(DayReport.ItemLine::name))
+				.toList();
 	}
 }

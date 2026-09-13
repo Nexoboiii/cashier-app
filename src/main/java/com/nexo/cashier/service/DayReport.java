@@ -30,5 +30,6 @@ public record DayReport(
 
 	public record AuditLine(Instant at, String type, Long amountMinorUnits, String detail) {}
 
-	public record SupplierLine(String supplier, int units, int revenueMinorUnits) {}
+	public record SupplierLine(String supplier, int units, int revenueMinorUnits,
+							   List<ItemLine> items) {}
 }

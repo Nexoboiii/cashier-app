@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 
 const money = (r) => 'Rs ' + r.toLocaleString('en-LK')
 const when = (iso) => new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
 
 export default function Report() {
   const [report, setReport] = useState(null)
+  const [collapsed, setCollapsed] = useState(() => new Set())
   const [openingFloat, setOpeningFloat] = useState('')
   const [counted, setCounted] = useState('')
   const [note, setNote] = useState('')
@@ -32,6 +33,15 @@ export default function Report() {
     const res = await fetch(`/api/days/${id}/report`)
     if (!res.ok) return setError('could not load the report')
     setReport(await res.json())
+  }
+
+  function toggle(supplier) {
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(supplier)) next.delete(supplier)
+      else next.add(supplier)
+      return next
+    })
   }
 
   async function openDay(e) {
@@ -83,7 +93,7 @@ export default function Report() {
         <form className="row" onSubmit={openDay}>
           <input type="number" min="0" step="1" placeholder="Opening float"
                  value={openingFloat} onChange={(e) => setOpeningFloat(e.target.value)} required />
-          <button disabled={busy || openingFloat === ''}>Open the day</button>
+          <button className="btn-primary" disabled={busy || openingFloat === ''}>Open the day</button>
         </form>
         {error && <p className="error">{error}</p>}
       </div>
@@ -92,12 +102,14 @@ export default function Report() {
 
   const closed = report.closedAt != null
   const variance = report.varianceMinorUnits
+  const supplierUnits = report.suppliers.reduce((s, x) => s + x.units, 0)
+  const supplierRevenue = report.suppliers.reduce((s, x) => s + x.revenueMinorUnits, 0)
 
   return (
     <div className="page">
       <div className="row no-print">
         <button onClick={() => (closed ? loadReport(report.dayId) : loadCurrent())}>Refresh</button>
-        <button onClick={() => window.print()}>Print</button>
+        <button className="btn-primary" onClick={() => window.print()}>Print</button>
         {closed && <button onClick={() => setReport(null)}>Open a new day</button>}
       </div>
 
@@ -115,33 +127,45 @@ export default function Report() {
         <div className="stat"><span>Average</span><strong>{money(report.averageSaleMinorUnits)}</strong></div>
       </div>
 
-      <h3>What sold</h3>
-      {report.items.length === 0 ? <p className="muted">Nothing yet.</p> : (
-        <table>
-          <thead><tr><th>Item</th><th>Units</th><th>Revenue</th></tr></thead>
-          <tbody>
-            {report.items.map((i) => (
-              <tr key={i.name}>
-                <td>{i.name}</td>
-                <td>{i.units}</td>
-                <td>{money(i.revenueMinorUnits)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
       <h3>By supplier</h3>
       {report.suppliers.length === 0 ? <p className="muted">Nothing yet.</p> : (
-        <table>
-          <thead><tr><th>Supplier</th><th>Units</th><th>Owed</th></tr></thead>
+        <table className="grouped">
+          <thead>
+            <tr>
+              <th>Supplier / item</th>
+              <th className="num">Units</th>
+              <th className="num">Revenue</th>
+            </tr>
+          </thead>
           <tbody>
-            {report.suppliers.map((s) => (
-              <tr key={s.supplier}>
-                <td>{s.supplier}</td>
-                <td>{s.units}</td>
-                <td>{money(s.revenueMinorUnits)}</td>
-              </tr>
-            ))}
+            {report.suppliers.map((s) => {
+              const shut = collapsed.has(s.supplier)
+              return (
+                <Fragment key={s.supplier}>
+                  <tr className="group" onClick={() => toggle(s.supplier)}>
+                    <td>
+                      <span className="twisty">{shut ? '▸' : '▾'}</span>
+                      {s.supplier}
+                      <span className="sub">{s.units} {s.units === 1 ? 'unit' : 'units'}</span>
+                    </td>
+                    <td className="num">{s.units}</td>
+                    <td className="num">{money(s.revenueMinorUnits)}</td>
+                  </tr>
+                  {s.items.map((i) => (
+                    <tr className={shut ? 'item is-hidden' : 'item'} key={s.supplier + '|' + i.name}>
+                      <td>{i.name}</td>
+                      <td className="num">{i.units}</td>
+                      <td className="num">{money(i.revenueMinorUnits)}</td>
+                    </tr>
+                  ))}
+                </Fragment>
+              )
+            })}
+            <tr className="total-row">
+              <td>Total</td>
+              <td className="num">{supplierUnits}</td>
+              <td className="num">{money(supplierRevenue)}</td>
+            </tr>
           </tbody>
         </table>
       )}
@@ -172,7 +196,7 @@ export default function Report() {
           <input type="number" min="0" step="1" placeholder="Counted in the tin"
                  value={counted} onChange={(e) => setCounted(e.target.value)} required />
           <input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
-          <button disabled={busy || counted === ''}>Close the day</button>
+          <button className="btn-primary" disabled={busy || counted === ''}>Close the day</button>
         </form>
       )}
 
