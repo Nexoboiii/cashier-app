@@ -12,6 +12,12 @@ const TABS = [
 export default function App() {
   const [screen, setScreen] = useState('till')
 
+  async function shutdown() {
+    if (!window.confirm('Close the till? Make sure the day is closed first.')) return
+    await fetch('/api/system/shutdown', { method: 'POST' }).catch(() => {})
+    window.close()
+  }
+
   return (
     <>
       <header className="topbar no-print">
@@ -24,6 +30,7 @@ export default function App() {
               </button>
             ))}
           </nav>
+          <button className="btn-ghost shutdown" onClick={shutdown}>Close till</button>
         </div>
       </header>
 

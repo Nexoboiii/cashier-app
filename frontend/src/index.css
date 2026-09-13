@@ -349,3 +349,6 @@ th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .twisty { display: none; }
   .grouped tr.group td { background: #f2f3f5; }
 }
+
+.shutdown { margin-left: auto; }
+.shutdown:hover { color: var(--danger); border-color: var(--danger); }

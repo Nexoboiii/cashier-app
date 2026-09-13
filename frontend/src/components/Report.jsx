@@ -22,7 +22,15 @@ export default function Report() {
   async function loadCurrent() {
     setError('')
     const res = await fetch('/api/days/current')
-    if (res.status === 204) { setReport(null); return }
+        if (res.status === 204) {
+          setReport(null)
+          const d = await fetch('/api/days/default-float')
+          if (d.ok) {
+            const { openingFloatMinorUnits } = await d.json()
+            if (openingFloatMinorUnits > 0) setOpeningFloat(String(openingFloatMinorUnits))
+          }
+          return
+        }
     if (!res.ok) return setError('could not load the day')
     const day = await res.json()
     loadReport(day.id)

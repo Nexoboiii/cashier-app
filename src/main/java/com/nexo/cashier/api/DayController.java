@@ -4,11 +4,13 @@ import com.nexo.cashier.persistence.TillDay;
 import com.nexo.cashier.service.BackupService;
 import com.nexo.cashier.service.DayReport;
 import com.nexo.cashier.service.ReportService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/days")
@@ -16,10 +18,13 @@ public class DayController {
 
 	private final ReportService service;
 	private final BackupService backups;
+	private final int defaultFloatMinorUnits;
 
-	public DayController(ReportService service, BackupService backups) {
+	public DayController(ReportService service, BackupService backups,
+						 @Value("${cashier.day.default-float:0}") int defaultFloatMinorUnits) {
 		this.service = service;
 		this.backups = backups;
+		this.defaultFloatMinorUnits = defaultFloatMinorUnits;
 	}
 
 	public record OpenRequest(int openingFloatMinorUnits) {}
@@ -35,6 +40,10 @@ public class DayController {
 					d.getClosedAt(), d.getExpectedCashMinorUnits(), d.getCountedCashMinorUnits(),
 					d.getVarianceMinorUnits(), d.getCloseNote(), d.isOpen());
 		}
+	}
+	@GetMapping("/default-float")
+	public Map<String, Integer> defaultFloat() {
+		return Map.of("openingFloatMinorUnits", defaultFloatMinorUnits);
 	}
 
 	@PostMapping("/open")
