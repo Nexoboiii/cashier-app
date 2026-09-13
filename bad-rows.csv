@@ -1,0 +1,7 @@
+name,price,stock,lowStockThreshold
+Good Item,1000,5,2
+Bad Price,notanumber,5,2
+,1500,5,2
+Negative,-100,5,2
+"Standee, Gojo Deluxe",4000,6,2
+Another Good,1200,3,1
