@@ -2,7 +2,8 @@
 setlocal
 cd /d "%~dp0"
 
-set "JAR=cashier-app-0.0.1-SNAPSHOT.jar"
+set "JAR=cashier-app.jar"
+if not exist "%JAR%" set "JAR=cashier-app-0.0.1-SNAPSHOT.jar"
 if not exist "%JAR%" set "JAR=target\cashier-app-0.0.1-SNAPSHOT.jar"
 if not exist "%JAR%" (
   echo Could not find the jar next to this file or in target\.
