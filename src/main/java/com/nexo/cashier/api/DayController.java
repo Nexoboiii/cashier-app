@@ -1,6 +1,7 @@
 package com.nexo.cashier.api;
 
 import com.nexo.cashier.persistence.TillDay;
+import com.nexo.cashier.service.BackupService;
 import com.nexo.cashier.service.DayReport;
 import com.nexo.cashier.service.ReportService;
 import org.springframework.http.HttpStatus;
@@ -14,9 +15,11 @@ import java.util.List;
 public class DayController {
 
 	private final ReportService service;
+	private final BackupService backups;
 
-	public DayController(ReportService service) {
+	public DayController(ReportService service, BackupService backups) {
 		this.service = service;
+		this.backups = backups;
 	}
 
 	public record OpenRequest(int openingFloatMinorUnits) {}
@@ -42,7 +45,9 @@ public class DayController {
 
 	@PostMapping("/close")
 	public DayResponse close(@RequestBody CloseRequest req) {
-		return DayResponse.from(service.closeDay(req.countedCashMinorUnits(), req.note()));
+		DayResponse day = DayResponse.from(service.closeDay(req.countedCashMinorUnits(), req.note()));
+		backups.backup("day-close");   // after the tx commits, or the backup misses the close
+		return day;
 	}
 
 	// 204 when nothing is open - the till uses this to decide whether to show the open screen
