@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const EMPTY = { name: '', priceMinorUnits: '', stockQuantity: '', lowStockThreshold: '' }
+const EMPTY = { name: '', priceMinorUnits: '', stockQuantity: '', lowStockThreshold: '', supplier: '' }
 
 // whole rupees - no division, ever
 const EMPTY_STOCK = { action: 'restock', amount: '', note: '' }
@@ -30,12 +30,13 @@ export default function Products() {
 
   function edit(p) {
     setEditingId(p.id)
-    setForm({
-      name: p.name,
-      priceMinorUnits: String(p.priceMinorUnits),
-      stockQuantity: String(p.stockQuantity),
-      lowStockThreshold: String(p.lowStockThreshold),
-    })
+      setForm({
+          name: p.name,
+          priceMinorUnits: String(p.priceMinorUnits),
+          stockQuantity: String(p.stockQuantity),
+          lowStockThreshold: String(p.lowStockThreshold),
+          supplier: p.supplier ?? '',
+        })
     setError(null)
   }
 
@@ -50,18 +51,20 @@ export default function Products() {
     setError(null)
     const editing = editingId !== null
 
-    const body = editing
-      ? {
-          name: form.name,
-          priceMinorUnits: Number(form.priceMinorUnits),
-          lowStockThreshold: Number(form.lowStockThreshold),
-        }
-      : {
-          name: form.name,
-          priceMinorUnits: Number(form.priceMinorUnits),
-          stockQuantity: Number(form.stockQuantity),
-          lowStockThreshold: Number(form.lowStockThreshold),
-        }
+        const body = editing
+          ? {
+              name: form.name,
+              priceMinorUnits: Number(form.priceMinorUnits),
+              lowStockThreshold: Number(form.lowStockThreshold),
+              supplier: form.supplier,
+            }
+          : {
+              name: form.name,
+              priceMinorUnits: Number(form.priceMinorUnits),
+              stockQuantity: Number(form.stockQuantity),
+              lowStockThreshold: Number(form.lowStockThreshold),
+              supplier: form.supplier,
+            }
 
     const res = await fetch(editing ? `/api/products/${editingId}` : '/api/products', {
       method: editing ? 'PUT' : 'POST',
@@ -141,6 +144,12 @@ export default function Products() {
           title={editingId !== null ? 'stock changes through sales and restocks only' : ''}
         />
         <input {...field('lowStockThreshold')} placeholder="low stock at" type="number" required />
+        <input {...field('supplier')} placeholder="supplier (blank = ours)" list="suppliers" />
+         <datalist id="suppliers">
+             {[...new Set(products.map((p) => p.supplier).filter(Boolean))].sort().map((s) => (
+                 <option key={s} value={s} />
+             ))}
+         </datalist>
         <button type="submit">{editingId === null ? 'Add' : 'Save'}</button>
         {editingId !== null && <button type="button" onClick={cancel}>Cancel</button>}
       </form>
@@ -199,13 +208,14 @@ export default function Products() {
       <table>
         <thead>
           <tr>
-            <th>Name</th><th>Price</th><th>Stock</th><th>Low at</th><th></th>
+            <th>Name</th><th>Supplier</th><th>Price</th><th>Stock</th><th>Low at</th><th></th>
           </tr>
         </thead>
         <tbody>
           {products.map((p) => (
             <tr key={p.id} className={p.stockQuantity <= p.lowStockThreshold ? 'low' : ''}>
               <td>{p.name}</td>
+              <td>{p.supplier ?? <span className="muted">ours</span>}</td>
               <td>{money(p.priceMinorUnits)}</td>
               <td>{p.stockQuantity}</td>
               <td>{p.lowStockThreshold}</td>

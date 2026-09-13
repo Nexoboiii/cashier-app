@@ -63,7 +63,8 @@ public class SaleService {
 
 			// price and name come from the db, never from the client
 			SaleLineItem item = new SaleLineItem(
-					product.getId(), product.getName(), product.getPriceMinorUnits(), line.quantity());
+					product.getId(), product.getName(), product.getPriceMinorUnits(),
+					line.quantity(), product.getSupplier());
 
 			sale.addLine(item);
 			total += item.getLineTotal();

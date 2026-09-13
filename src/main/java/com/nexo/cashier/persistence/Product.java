@@ -27,6 +27,10 @@ public class Product {
 	@Column(nullable = false)
 	private int lowStockThreshold;
 
+	// null = our own stock
+	@Column(length = 120)
+	private String supplier;
+
 	@Column(nullable = false)
 	private boolean active = true;
 
@@ -54,6 +58,9 @@ public class Product {
 
 	public int getLowStockThreshold() { return lowStockThreshold; }
 	public void setLowStockThreshold(int lowStockThreshold) { this.lowStockThreshold = lowStockThreshold; }
+
+	public String getSupplier() { return supplier; }
+	public void setSupplier(String supplier) { this.supplier = supplier; }
 
 	public boolean isActive() { return active; }
 	public void setActive(boolean active) { this.active = active; }

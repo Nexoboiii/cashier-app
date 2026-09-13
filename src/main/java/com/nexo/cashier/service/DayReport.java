@@ -23,9 +23,12 @@ public record DayReport(
 		String closeNote,
 
 		List<ItemLine> items,
-		List<AuditLine> exceptions) {
+		List<AuditLine> exceptions,
+		List<SupplierLine> suppliers) {
 
 	public record ItemLine(String name, int units, int revenueMinorUnits) {}
 
 	public record AuditLine(Instant at, String type, Long amountMinorUnits, String detail) {}
+
+	public record SupplierLine(String supplier, int units, int revenueMinorUnits) {}
 }

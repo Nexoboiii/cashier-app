@@ -24,12 +24,14 @@ public class ProductController {
 		this.service = service;
 	}
 
-	public record CreateRequest(String name, int priceMinorUnits, int stockQuantity, int lowStockThreshold) {}
+	public record CreateRequest(String name, int priceMinorUnits, int stockQuantity,
+								int lowStockThreshold, String supplier) {}
 
-	public record UpdateRequest(String name, int priceMinorUnits, int lowStockThreshold) {}
+	public record UpdateRequest(String name, int priceMinorUnits, int lowStockThreshold, String supplier) {}
 
 	public record ProductResponse(Long id, String name, int priceMinorUnits,
-								  int stockQuantity, int lowStockThreshold, boolean active) {
+								  int stockQuantity, int lowStockThreshold,
+								  String supplier, boolean active) {
 
 		static ProductResponse from(Product p) {
 			return new ProductResponse(
@@ -38,6 +40,7 @@ public class ProductController {
 					p.getPriceMinorUnits(),
 					p.getStockQuantity(),
 					p.getLowStockThreshold(),
+					p.getSupplier(),
 					p.isActive());
 		}
 	}
@@ -51,13 +54,13 @@ public class ProductController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public ProductResponse create(@RequestBody CreateRequest req) {
 		Product saved = service.create(
-				req.name(), req.priceMinorUnits(), req.stockQuantity(), req.lowStockThreshold());
+				req.name(), req.priceMinorUnits(), req.stockQuantity(), req.lowStockThreshold(), req.supplier());
 		return ProductResponse.from(saved);
 	}
 
 	@PutMapping("/{id}")
 	public ProductResponse update(@PathVariable Long id, @RequestBody UpdateRequest req) {
-		Product saved = service.update(id, req.name(), req.priceMinorUnits(), req.lowStockThreshold());
+		Product saved = service.update(id, req.name(), req.priceMinorUnits(), req.lowStockThreshold(), req.supplier());
 		return ProductResponse.from(saved);
 	}
 

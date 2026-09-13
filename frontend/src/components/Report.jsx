@@ -130,6 +130,21 @@ export default function Report() {
           </tbody>
         </table>
       )}
+      <h3>By supplier</h3>
+      {report.suppliers.length === 0 ? <p className="muted">Nothing yet.</p> : (
+        <table>
+          <thead><tr><th>Supplier</th><th>Units</th><th>Owed</th></tr></thead>
+          <tbody>
+            {report.suppliers.map((s) => (
+              <tr key={s.supplier}>
+                <td>{s.supplier}</td>
+                <td>{s.units}</td>
+                <td>{money(s.revenueMinorUnits)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       <h3>Cash reconciliation</h3>
       <table className="recon">

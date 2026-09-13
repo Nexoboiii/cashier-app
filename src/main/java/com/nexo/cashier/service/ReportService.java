@@ -16,6 +16,7 @@ public class ReportService {
 	private final SaleRepository sales;
 	private final AuditRepository audits;
 	private final AuditService audit;
+	private static final String OWN_STOCK = "Own stock";
 
 	public ReportService(TillDayRepository days, SaleRepository sales,
 						 AuditRepository audits, AuditService audit) {
@@ -89,6 +90,8 @@ public class ReportService {
 		int total = 0, cash = 0, card = 0, tendered = 0, change = 0;
 		Map<String, Integer> units = new HashMap<>();
 		Map<String, Integer> revenue = new HashMap<>();
+		Map<String, Integer> supplierUnits = new HashMap<>();
+		Map<String, Integer> supplierRevenue = new HashMap<>();
 
 		for (Sale s : daySales) {
 			total += s.getTotalMinorUnits();
@@ -102,6 +105,9 @@ public class ReportService {
 			for (SaleLineItem l : s.getLines()) {
 				units.merge(l.getProductNameAtSale(), l.getQuantity(), Integer::sum);
 				revenue.merge(l.getProductNameAtSale(), l.getLineTotal(), Integer::sum);
+				String who = l.getSupplierAtSale() == null ? OWN_STOCK : l.getSupplierAtSale();
+				supplierUnits.merge(who, l.getQuantity(), Integer::sum);
+				supplierRevenue.merge(who, l.getLineTotal(), Integer::sum);
 			}
 		}
 
@@ -109,6 +115,11 @@ public class ReportService {
 				.map(e -> new DayReport.ItemLine(e.getKey(), units.get(e.getKey()), e.getValue()))
 				.sorted(Comparator.comparingInt(DayReport.ItemLine::revenueMinorUnits).reversed()
 						.thenComparing(DayReport.ItemLine::name))
+				.toList();
+		List<DayReport.SupplierLine> suppliers = supplierRevenue.entrySet().stream()
+				.map(e -> new DayReport.SupplierLine(e.getKey(), supplierUnits.get(e.getKey()), e.getValue()))
+				.sorted(Comparator.comparingInt(DayReport.SupplierLine::revenueMinorUnits).reversed()
+						.thenComparing(DayReport.SupplierLine::supplier))
 				.toList();
 
 		List<DayReport.AuditLine> exceptions = audits
@@ -133,6 +144,6 @@ public class ReportService {
 				daySales.size(), total, cash, card, average,
 				tendered, change, expected,
 				day.getCountedCashMinorUnits(), day.getVarianceMinorUnits(),day.getCloseNote(),
-				items, exceptions);
+				items, exceptions, suppliers);
 	}
 }

@@ -31,14 +31,16 @@ public class ProductService {
 		return repository.findAll();
 	}
 
-	public Product create(String name, int priceMinorUnits, int stockQuantity, int lowStockThreshold) {
+	public Product create(String name, int priceMinorUnits, int stockQuantity,
+						  int lowStockThreshold, String supplier) {
 		validate(name, priceMinorUnits, stockQuantity, lowStockThreshold);
 		if (repository.findByName(name).isPresent())  throw new IllegalArgumentException("a product called '" + name + "' already exists");
 		Product product = new Product(name, priceMinorUnits, stockQuantity, lowStockThreshold);
+		product.setSupplier(clean(supplier));
 		return repository.save(product);
 	}
 
-	public Product update(Long id, String name, int priceMinorUnits, int lowStockThreshold) {
+	public Product update(Long id, String name, int priceMinorUnits, int lowStockThreshold, String supplier) {
 		Product existing = repository.findById(id).orElseThrow(() -> new IllegalArgumentException("no product with id " + id));
 		validate(name, priceMinorUnits, existing.getStockQuantity(), lowStockThreshold);
 		Optional<Product> byName = repository.findByName(name);
@@ -48,6 +50,7 @@ public class ProductService {
 		existing.setName(name);
 		existing.setPriceMinorUnits(priceMinorUnits);
 		existing.setLowStockThreshold(lowStockThreshold);
+		existing.setSupplier(clean(supplier));
 		return repository.save(existing);
 	}
 
@@ -62,6 +65,7 @@ public class ProductService {
 			if (header == null) throw new IllegalArgumentException("the file is empty");
 			if (header.length > 0) header[0] = header[0].replace("\uFEFF", "").trim();
 			checkHeader(header);
+			boolean hasSupplier = header.length > 4;
 
 			String[] row;
 			int line = 1;
@@ -69,7 +73,7 @@ public class ProductService {
 				line++;
 				if (row.length == 1 && row[0].isBlank()) continue;
 				try {
-					if (upsertRow(row)) created++; else updated++;
+					if (upsertRow(row, hasSupplier)) created++; else updated++;
 				} catch (Exception e) {
 					errors.add(new ImportResult.RowError(line, e.getMessage()));
 				}
@@ -84,13 +88,14 @@ public class ProductService {
 	public String exportCsv() {
 		StringWriter out = new StringWriter();
 		try (CSVWriter writer = new CSVWriter(out)) {
-			writer.writeNext(new String[] { "name", "price", "stock", "lowStockThreshold" }, false);
+			writer.writeNext(new String[] { "name", "price", "stock", "lowStockThreshold", "supplier" }, false);
 			for (Product p : repository.findAll()) {
 				writer.writeNext(new String[] {
 						p.getName(),
 						String.valueOf(p.getPriceMinorUnits()),
 						String.valueOf(p.getStockQuantity()),
-						String.valueOf(p.getLowStockThreshold())
+						String.valueOf(p.getLowStockThreshold()),
+						p.getSupplier() == null ? "" : p.getSupplier()
 				}, false);
 			}
 		} catch (IOException e) {
@@ -103,7 +108,7 @@ public class ProductService {
 	private void checkHeader(String[] header) {
 		String[] expected = { "name", "price", "stock", "lowStockThreshold" };
 		if (header.length < expected.length) {
-			throw new IllegalArgumentException("expected columns: name,price,stock,lowStockThreshold");
+			throw new IllegalArgumentException("expected columns: name,price,stock,lowStockThreshold[,supplier]");
 		}
 		for (int i = 0; i < expected.length; i++) {
 			if (!header[i].trim().equalsIgnoreCase(expected[i])) {
@@ -111,16 +116,20 @@ public class ProductService {
 						"column " + (i + 1) + " should be '" + expected[i] + "' but was '" + header[i].trim() + "'");
 			}
 		}
+		if (header.length > 4 && !header[4].trim().equalsIgnoreCase("supplier")) {
+			throw new IllegalArgumentException("column 5 should be 'supplier' but was '" + header[4].trim() + "'");
+		}
 	}
 
 	// true = created, false = updated
-	private boolean upsertRow(String[] row) {
+	private boolean upsertRow(String[] row, boolean hasSupplier) {
 		if (row.length < 4) throw new IllegalArgumentException("expected 4 columns, found " + row.length);
 
 		String name = row[0].trim();
 		int price = parseWholeNumber(row[1], "price");
 		int stock = parseWholeNumber(row[2], "stock");
 		int threshold = parseWholeNumber(row[3], "lowStockThreshold");
+		String supplier = hasSupplier && row.length > 4 ? clean(row[4]) : null;
 
 		validate(name, price, stock, threshold);
 
@@ -129,11 +138,15 @@ public class ProductService {
 			Product p = existing.get();
 			p.setPriceMinorUnits(price);
 			p.setLowStockThreshold(threshold);
+			// no supplier column = leave it alone; blank in the column = clear it
+			if (hasSupplier) p.setSupplier(supplier);
 			// stock deliberately not touched - see note
 			repository.save(p);
 			return false;
 		}
-		repository.save(new Product(name, price, stock, threshold));
+		Product created = new Product(name, price, stock, threshold);
+		created.setSupplier(supplier);
+		repository.save(created);
 		return true;
 	}
 
@@ -144,6 +157,12 @@ public class ProductService {
 			throw new IllegalArgumentException(field + " must be a whole number, was '" + raw.trim() + "'");
 		}
 	}
+
+	private static String clean(String supplier) {
+		if (supplier == null || supplier.isBlank()) return null;
+		return supplier.trim();
+	}
+
 	private void validate(String name, int priceMinorUnits, int stockQuantity, int lowStockThreshold) {
 		if (name == null || name.isBlank()) throw new IllegalArgumentException("name is required");
 		if (priceMinorUnits < 0) throw new IllegalArgumentException("price cannot be negative");
