@@ -74,6 +74,8 @@ jobs:
           mkdir -p bundle/config
           cp target/cashier-app-*-SNAPSHOT.jar bundle/cashier-app.jar
           cp start-till.bat stop-till.bat bundle/
+          cp start-till.command stop-till.command bundle/
+          chmod +x bundle/start-till.command bundle/stop-till.command
           cp RUNBOOK.md config.example.properties catalogue.csv bundle/
           cat > bundle/config/application.properties <<'PROPS'
           # paths are relative to this folder - the bundle is self-contained
