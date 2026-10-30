@@ -81,7 +81,8 @@ jobs:
           # paths are relative to this folder - the bundle is self-contained
           server.port=8080
           spring.datasource.url=jdbc:h2:file:./data/cashier;DB_CLOSE_ON_EXIT=FALSE
-          spring.h2.console.enabled=false
+          # on so a disputed sale can be looked up at the booth
+          spring.h2.console.enabled=true
           cashier.backup.dir=backups
           cashier.backup.keep=20
           cashier.day.default-float=0
@@ -95,5 +96,15 @@ jobs:
         with:
           files: cashier-app-${{ github.ref_name }}.zip
           body: |
-            Needs **Java 21** installed. Unzip, run `start-till.bat`.
-            Read `RUNBOOK.md` first. Settings live in `config\application.properties`.
+            Needs **Java 21** installed (`java -version`).
+
+            **Windows** - unzip, run `start-till.bat`.
+
+            **macOS** - unzip, then from inside the folder:
+            ```
+            chmod +x start-till.command stop-till.command
+            xattr -dr com.apple.quarantine .
+            ./start-till.command
+            ```
+
+            Read `RUNBOOK.md` first. Settings live in `config/application.properties`.
