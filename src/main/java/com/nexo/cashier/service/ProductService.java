@@ -32,15 +32,17 @@ public class ProductService {
 	}
 
 	public Product create(String name, int priceMinorUnits, int stockQuantity,
-						  int lowStockThreshold, String supplier) {
+						  int lowStockThreshold, String supplier, boolean openPrice) {
 		validate(name, priceMinorUnits, stockQuantity, lowStockThreshold);
 		if (repository.findByName(name).isPresent())  throw new IllegalArgumentException("a product called '" + name + "' already exists");
 		Product product = new Product(name, priceMinorUnits, stockQuantity, lowStockThreshold);
 		product.setSupplier(clean(supplier));
+		product.setOpenPrice(openPrice);
 		return repository.save(product);
 	}
 
-	public Product update(Long id, String name, int priceMinorUnits, int lowStockThreshold, String supplier) {
+	public Product update(Long id, String name, int priceMinorUnits, int lowStockThreshold,
+						  String supplier, boolean openPrice) {
 		Product existing = repository.findById(id).orElseThrow(() -> new IllegalArgumentException("no product with id " + id));
 		validate(name, priceMinorUnits, existing.getStockQuantity(), lowStockThreshold);
 		Optional<Product> byName = repository.findByName(name);
@@ -51,6 +53,7 @@ public class ProductService {
 		existing.setPriceMinorUnits(priceMinorUnits);
 		existing.setLowStockThreshold(lowStockThreshold);
 		existing.setSupplier(clean(supplier));
+		existing.setOpenPrice(openPrice);
 		return repository.save(existing);
 	}
 

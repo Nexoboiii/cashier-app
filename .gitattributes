@@ -4,6 +4,8 @@
 # mvnw must be LF or the Linux CI runner won't execute it
 /mvnw    text eol=lf
 *.sh     text eol=lf
+# macOS double-click launchers: CRLF breaks the shebang
+*.command text eol=lf
 *.cmd    text eol=crlf
 *.bat    text eol=crlf
 

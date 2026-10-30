@@ -21,7 +21,7 @@ public class SaleController {
 		this.service = service;
 	}
 
-	public record LineRequest(Long productId, int quantity) {}
+	public record LineRequest(Long productId, int quantity, Integer unitPriceMinorUnits) {}
 
 	public record CreateSaleRequest(List<LineRequest> lines,
 									PaymentMethod paymentMethod,
@@ -52,7 +52,7 @@ public class SaleController {
 		if (req.lines() == null) throw new IllegalArgumentException("a sale needs at least one line");
 
 		List<SaleLine> lines = req.lines().stream()
-				.map(l -> new SaleLine(l.productId(), l.quantity()))
+				.map(l -> new SaleLine(l.productId(), l.quantity(), l.unitPriceMinorUnits()))
 				.toList();
 
 		Sale sale = service.createSale(lines, req.paymentMethod(), req.cashTenderedMinorUnits());

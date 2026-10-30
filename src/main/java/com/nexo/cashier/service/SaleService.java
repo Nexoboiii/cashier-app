@@ -61,13 +61,20 @@ public class SaleService {
 						"only " + product.getStockQuantity() + " left of " + product.getName());
 			}
 
-			// price and name come from the db, never from the client
+			int unitPrice = unitPriceFor(product, line.unitPriceMinorUnits());
+
+			// name always comes from the db; so does price unless the product is open-price
 			SaleLineItem item = new SaleLineItem(
-					product.getId(), product.getName(), product.getPriceMinorUnits(),
+					product.getId(), product.getName(), unitPrice,
 					line.quantity(), product.getSupplier());
 
 			sale.addLine(item);
 			total += item.getLineTotal();
+
+			if (product.isOpenPrice()) {
+				audit.record(AuditEventType.PRICE_OVERRIDE, "PRODUCT", product.getId(),
+						(long) unitPrice, product.getName() + " rung at " + unitPrice);
+			}
 
 			product.setStockQuantity(product.getStockQuantity() - line.quantity());
 			productRepository.save(product);
@@ -94,5 +101,23 @@ public class SaleService {
 				(long) saved.getTotalMinorUnits(),
 				saved.getLines().size() + " lines, " + paymentMethod);
 		return saved;
+	}
+
+	// the only place a client-supplied price is ever accepted, and only when the
+	// product is flagged open-price. anything else is rejected, not ignored.
+	private static int unitPriceFor(Product product, Integer requested) {
+		if (product.isOpenPrice()) {
+			if (requested == null) {
+				throw new IllegalArgumentException(product.getName() + " needs an amount");
+			}
+			if (requested <= 0) {
+				throw new IllegalArgumentException("amount for " + product.getName() + " must be more than zero");
+			}
+			return requested;
+		}
+		if (requested != null) {
+			throw new IllegalArgumentException("price cannot be set for " + product.getName());
+		}
+		return product.getPriceMinorUnits();
 	}
 }
