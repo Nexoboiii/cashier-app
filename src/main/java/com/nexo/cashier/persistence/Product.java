@@ -31,6 +31,9 @@ public class Product {
 	@Column(length = 120)
 	private String supplier;
 
+	// nullable Boolean: ddl-auto cannot add a NOT NULL column to a table with rows
+	private Boolean openPrice;
+
 	@Column(nullable = false)
 	private boolean active = true;
 
@@ -61,6 +64,10 @@ public class Product {
 
 	public String getSupplier() { return supplier; }
 	public void setSupplier(String supplier) { this.supplier = supplier; }
+
+	// the amount is asked for at the till instead of coming from the catalogue
+	public boolean isOpenPrice() { return openPrice != null && openPrice; }
+	public void setOpenPrice(boolean openPrice) { this.openPrice = openPrice; }
 
 	public boolean isActive() { return active; }
 	public void setActive(boolean active) { this.active = active; }

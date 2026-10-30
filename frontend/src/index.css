@@ -352,3 +352,13 @@ th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 .shutdown { margin-left: auto; }
 .shutdown:hover { color: var(--danger); border-color: var(--danger); }
+
+/* --- open price checkbox --- */
+.check {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  padding: 9px 13px; border: 1px solid var(--border); border-radius: var(--r1);
+  background: var(--surface-2); color: var(--text-dim); cursor: pointer;
+  white-space: nowrap;
+}
+.check input { width: 15px; height: 15px; padding: 0; margin: 0; accent-color: var(--accent); }
+.check:has(input:checked) { color: var(--text); border-color: var(--accent-dim); }

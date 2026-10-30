@@ -91,4 +91,46 @@ class SaleServiceTest {
 		assertEquals(auditBefore + 1, auditRepository.count(),
 				"SALE_FAILED did not survive the rollback - check REQUIRES_NEW and that AuditService is a separate bean");
 	}
+
+	@Test
+	void aPriceCannotBeSetOnAnOrdinaryProduct() {
+		Product mug = productRepository.save(new Product("RB Mug", 900, 10, 2));
+
+		// the whole money path rests on this being refused rather than ignored
+		assertThrows(IllegalArgumentException.class, () -> saleService.createSale(
+				List.of(new SaleLine(mug.getId(), 1, 1)),
+				PaymentMethod.CASH, 10000));
+
+		assertEquals(10, productRepository.findById(mug.getId()).orElseThrow().getStockQuantity(),
+				"a refused sale touched stock");
+	}
+
+	@Test
+	void anOpenPriceProductTakesTheAmountFromTheTill() {
+		Product xo = productRepository.save(new Product("RB Commission", 0, 10, 0));
+		xo.setOpenPrice(true);
+		productRepository.save(xo);
+
+		Sale sale = saleService.createSale(
+				List.of(new SaleLine(xo.getId(), 1, 5000)),
+				PaymentMethod.CASH, 5000);
+
+		assertEquals(5000, sale.getTotalMinorUnits());
+		assertEquals(5000, sale.getLines().get(0).getUnitPriceAtSale());
+	}
+
+	@Test
+	void anOpenPriceProductNeedsAnAmount() {
+		Product xo = productRepository.save(new Product("RB Sketch", 0, 10, 0));
+		xo.setOpenPrice(true);
+		productRepository.save(xo);
+
+		assertThrows(IllegalArgumentException.class, () -> saleService.createSale(
+				List.of(new SaleLine(xo.getId(), 1)),
+				PaymentMethod.CASH, 10000));
+
+		assertThrows(IllegalArgumentException.class, () -> saleService.createSale(
+				List.of(new SaleLine(xo.getId(), 1, 0)),
+				PaymentMethod.CASH, 10000));
+	}
 }

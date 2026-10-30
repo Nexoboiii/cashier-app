@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const EMPTY = { name: '', priceMinorUnits: '', stockQuantity: '', lowStockThreshold: '', supplier: '' }
+const EMPTY = { name: '', priceMinorUnits: '', stockQuantity: '', lowStockThreshold: '', supplier: '', openPrice: false }
 
 // whole rupees - no division, ever
 const EMPTY_STOCK = { action: 'restock', amount: '', note: '' }
@@ -36,6 +36,7 @@ export default function Products() {
           stockQuantity: String(p.stockQuantity),
           lowStockThreshold: String(p.lowStockThreshold),
           supplier: p.supplier ?? '',
+          openPrice: !!p.openPrice,
         })
     setError(null)
   }
@@ -57,6 +58,7 @@ export default function Products() {
               priceMinorUnits: Number(form.priceMinorUnits),
               lowStockThreshold: Number(form.lowStockThreshold),
               supplier: form.supplier,
+              openPrice: form.openPrice,
             }
           : {
               name: form.name,
@@ -64,6 +66,7 @@ export default function Products() {
               stockQuantity: Number(form.stockQuantity),
               lowStockThreshold: Number(form.lowStockThreshold),
               supplier: form.supplier,
+              openPrice: form.openPrice,
             }
 
     const res = await fetch(editing ? `/api/products/${editingId}` : '/api/products', {
@@ -150,6 +153,14 @@ export default function Products() {
                  <option key={s} value={s} />
              ))}
          </datalist>
+        <label className="check" title="the amount is typed at the till instead of coming from here">
+          <input
+            type="checkbox"
+            checked={form.openPrice}
+            onChange={(e) => setForm({ ...form, openPrice: e.target.checked })}
+          />
+          open price
+        </label>
         <button type="submit" className="btn-primary">{editingId === null ? 'Add' : 'Save'}</button>
         {editingId !== null && <button type="button" className="btn-ghost" onClick={cancel}>Cancel</button>}
       </form>
@@ -216,7 +227,7 @@ export default function Products() {
             <tr key={p.id} className={p.stockQuantity <= p.lowStockThreshold ? 'low' : ''}>
               <td>{p.name}</td>
               <td>{p.supplier ?? <span className="muted">ours</span>}</td>
-              <td>{money(p.priceMinorUnits)}</td>
+              <td>{p.openPrice ? <span className="muted">custom</span> : money(p.priceMinorUnits)}</td>
               <td>{p.stockQuantity}</td>
               <td>{p.lowStockThreshold}</td>
               <td>

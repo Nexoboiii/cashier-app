@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const money = (r) => 'Rs ' + r.toLocaleString('en-LK')
 
@@ -14,6 +14,9 @@ export default function Till() {
   const [lastSale, setLastSale] = useState(null)
   const [busy, setBusy] = useState(false)
 
+  // open-price lines never merge, so each cart line needs its own identity
+  const seq = useRef(0)
+
   useEffect(() => { load() }, [])
 
   async function load() {
@@ -28,7 +31,7 @@ export default function Till() {
 
   const total = cart.reduce((s, l) => s + l.unitPrice * l.quantity, 0)
   const itemCount = cart.reduce((s, l) => s + l.quantity, 0)
-  const inCart = (id) => cart.find((l) => l.productId === id)?.quantity ?? 0
+  const inCart = (id) => cart.filter((l) => l.productId === id).reduce((s, l) => s + l.quantity, 0)
   const lowStock = products.filter((p) => p.stockQuantity <= p.lowStockThreshold && p.stockQuantity > 0)
   const soldOut = products.filter((p) => p.stockQuantity === 0)
 
@@ -37,30 +40,54 @@ export default function Till() {
 
   function add(p) {
     if (p.stockQuantity - inCart(p.id) <= 0) return
+
+    let unitPrice = p.priceMinorUnits
+    if (p.openPrice) {
+      const raw = window.prompt(`Amount for ${p.name}?`)
+      if (raw === null) return
+      const amount = Number(raw)
+      if (!Number.isInteger(amount) || amount <= 0) {
+        return setError('amount must be a whole number above zero')
+      }
+      unitPrice = amount
+    }
+
     setLastSale(null)
     setError(null)
     setFinder('')
     setCart((c) => {
-      const line = c.find((l) => l.productId === p.id)
-      if (line) return c.map((l) => (l.productId === p.id ? { ...l, quantity: l.quantity + 1 } : l))
-      return [...c, { productId: p.id, name: p.name, unitPrice: p.priceMinorUnits, quantity: 1 }]
+      // two custom amounts for the same product are two lines, not one
+      if (!p.openPrice) {
+        const line = c.find((l) => l.productId === p.id)
+        if (line) return c.map((l) => (l === line ? { ...l, quantity: l.quantity + 1 } : l))
+      }
+      seq.current += 1
+      return [...c, {
+        key: seq.current, productId: p.id, name: p.name,
+        unitPrice, quantity: 1, openPrice: !!p.openPrice,
+      }]
     })
   }
 
-  function bump(productId, by) {
-    const product = products.find((p) => p.id === productId)
-    setCart((c) =>
-      c.map((l) => {
-        if (l.productId !== productId) return l
-        const next = l.quantity + by
-        if (product && next > product.stockQuantity) return l
-        return { ...l, quantity: next }
-      }).filter((l) => l.quantity > 0)
-    )
+  function bump(key, by) {
+    setCart((c) => {
+      const line = c.find((l) => l.key === key)
+      if (!line) return c
+
+      // stock is held across every line of the same product, open-price or not
+      const product = products.find((p) => p.id === line.productId)
+      const held = c.filter((l) => l.productId === line.productId)
+                    .reduce((s, l) => s + l.quantity, 0)
+      if (product && held + by > product.stockQuantity) return c
+
+      return c
+        .map((l) => (l.key === key ? { ...l, quantity: l.quantity + by } : l))
+        .filter((l) => l.quantity > 0)
+    })
   }
 
-  function removeLine(productId) {
-    setCart((c) => c.filter((l) => l.productId !== productId))
+  function removeLine(key) {
+    setCart((c) => c.filter((l) => l.key !== key))
   }
 
   function clearCart() {
@@ -81,7 +108,11 @@ export default function Till() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lines: cart.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+          lines: cart.map((l) => ({
+            productId: l.productId,
+            quantity: l.quantity,
+            unitPriceMinorUnits: l.openPrice ? l.unitPrice : null,
+          })),
           paymentMethod,
           cashTenderedMinorUnits: paymentMethod === 'CASH' ? tenderedNum : null,
         }),
@@ -149,7 +180,7 @@ export default function Till() {
         e.preventDefault()
         if (finder !== '') return setFinder((f) => f.slice(0, -1))
         const last = cart[cart.length - 1]
-        if (last) bump(last.productId, -1)
+        if (last) bump(last.key, -1)
         return
       }
 
@@ -221,7 +252,7 @@ export default function Till() {
             <button key={p.id} className="tile" onClick={() => add(p)} disabled={left <= 0}>
               {key && <span className="tile-key">{key}</span>}
               <span className="tile-name">{p.name}</span>
-              <span className="tile-price">{money(p.priceMinorUnits)}</span>
+              <span className="tile-price">{p.openPrice ? 'Custom' : money(p.priceMinorUnits)}</span>
               <span className="tile-stock">{left} left</span>
             </button>
           )
@@ -240,13 +271,16 @@ export default function Till() {
           <p className="cart-empty">Type to find, or press a number key</p>
         ) : (
           cart.map((l) => (
-            <div key={l.productId} className="cart-line">
-              <span className="cart-name">{l.name}</span>
-              <button className="btn-ghost" onClick={() => bump(l.productId, -1)}>−</button>
+            <div key={l.key} className="cart-line">
+              <span className="cart-name">
+                {l.name}
+                {l.openPrice && <span className="muted"> @ {money(l.unitPrice)}</span>}
+              </span>
+              <button className="btn-ghost" onClick={() => bump(l.key, -1)}>−</button>
               <span className="qty">{l.quantity}</span>
-              <button className="btn-ghost" onClick={() => bump(l.productId, +1)}>+</button>
+              <button className="btn-ghost" onClick={() => bump(l.key, +1)}>+</button>
               <span className="cart-total">{money(l.unitPrice * l.quantity)}</span>
-              <button className="btn-ghost" onClick={() => removeLine(l.productId)}>✕</button>
+              <button className="btn-ghost" onClick={() => removeLine(l.key)}>✕</button>
             </div>
           ))
         )}
